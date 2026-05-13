@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { SelectionSide, WinningSide } from "@/generated/prisma/client";
 import {
   computeLegPools,
   multiplierForSide,
@@ -7,10 +6,10 @@ import {
   type BetWithSelections,
 } from "./odds";
 
-const A = SelectionSide.A;
-const B = SelectionSide.B;
+const A = "A" as const;
+const B = "B" as const;
 
-function makeBet(id: string, stake: number, selections: { legId: string; side: SelectionSide }[]): BetWithSelections {
+function makeBet(id: string, stake: number, selections: { legId: string; side: "A" | "B" }[]): BetWithSelections {
   return { id, stake, selections };
 }
 
@@ -46,16 +45,13 @@ describe("multiplierForSide", () => {
   });
 
   it("returns total/pool when bets exist", () => {
-    // 100 on A, 100 on B → multiplier = 200/100 = 2.0
     const m = multiplierForSide({ poolA: 100, poolB: 100, total: 200 }, A);
     expect(m).toBeCloseTo(2.0);
   });
 
   it("reflects skewed pool correctly", () => {
-    // 300 on A, 100 on B → A multiplier = 400/300 ≈ 1.333
     const mA = multiplierForSide({ poolA: 300, poolB: 100, total: 400 }, A);
     expect(mA).toBeCloseTo(4 / 3);
-    // B multiplier = 400/100 = 4.0
     const mB = multiplierForSide({ poolA: 300, poolB: 100, total: 400 }, B);
     expect(mB).toBeCloseTo(4.0);
   });
@@ -65,15 +61,15 @@ describe("payoutForBet — single", () => {
   it("pays out winner", () => {
     const bet = { ...makeBet("b1", 100, [{ legId: "l1", side: A }]), kind: "SINGLE" as const };
     const pools = new Map([["l1", { poolA: 100, poolB: 100, total: 200 }]]);
-    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: WinningSide.A }], pools);
+    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: "A" }], pools);
     expect(status).toBe("WON");
-    expect(payout).toBe(200); // 100 × 2.0
+    expect(payout).toBe(200);
   });
 
   it("returns 0 on loss", () => {
     const bet = { ...makeBet("b1", 100, [{ legId: "l1", side: A }]), kind: "SINGLE" as const };
     const pools = new Map([["l1", { poolA: 100, poolB: 100, total: 200 }]]);
-    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: WinningSide.B }], pools);
+    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: "B" }], pools);
     expect(status).toBe("LOST");
     expect(payout).toBe(0);
   });
@@ -81,7 +77,7 @@ describe("payoutForBet — single", () => {
   it("refunds stake on push", () => {
     const bet = { ...makeBet("b1", 75, [{ legId: "l1", side: A }]), kind: "SINGLE" as const };
     const pools = new Map([["l1", { poolA: 75, poolB: 75, total: 150 }]]);
-    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: WinningSide.PUSH }], pools);
+    const { status, payout } = payoutForBet(bet, [{ id: "l1", winningSide: "PUSH" }], pools);
     expect(status).toBe("PUSH");
     expect(payout).toBe(75);
   });
@@ -90,23 +86,20 @@ describe("payoutForBet — single", () => {
 describe("payoutForBet — parlay", () => {
   it("multiplies leg payouts when all hit", () => {
     const bet = {
-      ...makeBet("b1", 50, [
-        { legId: "l1", side: A },
-        { legId: "l2", side: B },
-      ]),
+      ...makeBet("b1", 50, [{ legId: "l1", side: A }, { legId: "l2", side: B }]),
       kind: "PARLAY" as const,
     };
     const pools = new Map([
-      ["l1", { poolA: 50, poolB: 50, total: 100 }],  // mA = 2.0
-      ["l2", { poolA: 50, poolB: 50, total: 100 }],  // mB = 2.0
+      ["l1", { poolA: 50, poolB: 50, total: 100 }],
+      ["l2", { poolA: 50, poolB: 50, total: 100 }],
     ]);
     const { status, payout } = payoutForBet(
       bet,
-      [{ id: "l1", winningSide: WinningSide.A }, { id: "l2", winningSide: WinningSide.B }],
+      [{ id: "l1", winningSide: "A" }, { id: "l2", winningSide: "B" }],
       pools
     );
     expect(status).toBe("WON");
-    expect(payout).toBe(200); // 50 × 2.0 × 2.0
+    expect(payout).toBe(200);
   });
 
   it("loses if any leg misses", () => {
@@ -120,7 +113,7 @@ describe("payoutForBet — parlay", () => {
     ]);
     const { status, payout } = payoutForBet(
       bet,
-      [{ id: "l1", winningSide: WinningSide.A }, { id: "l2", winningSide: WinningSide.A }],
+      [{ id: "l1", winningSide: "A" }, { id: "l2", winningSide: "A" }],
       pools
     );
     expect(status).toBe("LOST");
@@ -129,22 +122,18 @@ describe("payoutForBet — parlay", () => {
 
   it("void leg is 1x passthrough — parlay survives with remaining multipliers", () => {
     const bet = {
-      ...makeBet("b1", 50, [
-        { legId: "l1", side: A },
-        { legId: "l2", side: B },
-      ]),
+      ...makeBet("b1", 50, [{ legId: "l1", side: A }, { legId: "l2", side: B }]),
       kind: "PARLAY" as const,
     };
     const pools = new Map([
-      ["l1", { poolA: 50, poolB: 50, total: 100 }],  // mA = 2.0
+      ["l1", { poolA: 50, poolB: 50, total: 100 }],
       ["l2", { poolA: 50, poolB: 50, total: 100 }],
     ]);
     const { status, payout } = payoutForBet(
       bet,
-      [{ id: "l1", winningSide: WinningSide.A }, { id: "l2", winningSide: WinningSide.VOID }],
+      [{ id: "l1", winningSide: "A" }, { id: "l2", winningSide: "VOID" }],
       pools
     );
-    // l2 is void (1×), l1 hits at 2×. payout = 50 × 2 × 1 = 100
     expect(status).toBe("WON");
     expect(payout).toBe(100);
   });
@@ -160,7 +149,7 @@ describe("payoutForBet — parlay", () => {
     ]);
     const { status, payout } = payoutForBet(
       bet,
-      [{ id: "l1", winningSide: WinningSide.PUSH }, { id: "l2", winningSide: WinningSide.PUSH }],
+      [{ id: "l1", winningSide: "PUSH" }, { id: "l2", winningSide: "PUSH" }],
       pools
     );
     expect(status).toBe("PUSH");

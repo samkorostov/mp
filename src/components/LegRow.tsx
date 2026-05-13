@@ -1,15 +1,13 @@
 import type { Leg } from "@/generated/prisma/client";
-import { LegStatus, WinningSide } from "@/generated/prisma/client";
 import type { LegPools } from "@/lib/odds";
 import { multiplierForSide } from "@/lib/odds";
-import { SelectionSide } from "@/generated/prisma/client";
 
 function fmt(m: number | null) {
   if (m === null) return "—";
   return `${m.toFixed(2)}×`;
 }
 
-const winBadge: Partial<Record<WinningSide, string>> = {
+const winBadge: Record<string, string> = {
   A: "bg-green-800 text-green-200",
   B: "bg-red-900 text-red-300",
   PUSH: "bg-gray-700 text-gray-300",
@@ -31,10 +29,10 @@ export default function LegRow({
   selectedSide?: "A" | "B" | null;
   disabled?: boolean;
 }) {
-  const mA = pools ? multiplierForSide(pools, SelectionSide.A) : null;
-  const mB = pools ? multiplierForSide(pools, SelectionSide.B) : null;
+  const mA = pools ? multiplierForSide(pools, "A") : null;
+  const mB = pools ? multiplierForSide(pools, "B") : null;
 
-  const resolved = leg.status === LegStatus.RESOLVED;
+  const resolved = leg.status === "RESOLVED";
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
@@ -58,8 +56,8 @@ export default function LegRow({
           label={leg.sideALabel}
           multiplier={fmt(mA)}
           selected={selectedSide === "A"}
-          winning={resolved && leg.winningSide === WinningSide.A}
-          losing={resolved && leg.winningSide !== null && leg.winningSide !== WinningSide.A && leg.winningSide !== WinningSide.PUSH && leg.winningSide !== WinningSide.VOID}
+          winning={resolved && leg.winningSide === "A"}
+          losing={resolved && leg.winningSide !== null && leg.winningSide !== "A" && leg.winningSide !== "PUSH" && leg.winningSide !== "VOID"}
           onClick={onSelectA}
           disabled={disabled || resolved}
         />
@@ -67,8 +65,8 @@ export default function LegRow({
           label={leg.sideBLabel}
           multiplier={fmt(mB)}
           selected={selectedSide === "B"}
-          winning={resolved && leg.winningSide === WinningSide.B}
-          losing={resolved && leg.winningSide !== null && leg.winningSide !== WinningSide.B && leg.winningSide !== WinningSide.PUSH && leg.winningSide !== WinningSide.VOID}
+          winning={resolved && leg.winningSide === "B"}
+          losing={resolved && leg.winningSide !== null && leg.winningSide !== "B" && leg.winningSide !== "PUSH" && leg.winningSide !== "VOID"}
           onClick={onSelectB}
           disabled={disabled || resolved}
         />

@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { signIn, signOut } from "next-auth/react";
 import type { Session } from "next-auth";
-import { Role } from "@/generated/prisma/client";
 
 export default function Nav({ session }: { session: Session | null }) {
   const user = session?.user;
-  const admin = user?.role === Role.ADMIN;
+  const admin = user?.role === "ADMIN";
 
   return (
     <nav className="bg-gray-900 border-b border-gray-800 px-4 py-3">

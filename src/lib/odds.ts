@@ -1,4 +1,5 @@
-import { SelectionSide, WinningSide } from "@/generated/prisma/client";
+export type SelectionSide = "A" | "B";
+export type WinningSide = "A" | "B" | "PUSH" | "VOID";
 
 export interface BetWithSelections {
   id: string;
@@ -22,7 +23,7 @@ export function computeLegPools(bets: BetWithSelections[]): LegPoolsMap {
   for (const bet of bets) {
     for (const sel of bet.selections) {
       const existing = map.get(sel.legId) ?? { poolA: 0, poolB: 0, total: 0 };
-      if (sel.side === SelectionSide.A) {
+      if (sel.side === "A") {
         existing.poolA += bet.stake;
       } else {
         existing.poolB += bet.stake;
@@ -40,7 +41,7 @@ export function multiplierForSide(
   pools: LegPools,
   side: SelectionSide
 ): number | null {
-  const sidePool = side === SelectionSide.A ? pools.poolA : pools.poolB;
+  const sidePool = side === "A" ? pools.poolA : pools.poolB;
   if (sidePool === 0 || pools.total === 0) return null;
   return pools.total / sidePool;
 }
@@ -75,20 +76,13 @@ export function payoutForBet(
 
     const ws = leg.winningSide;
 
-    if (ws === WinningSide.VOID) {
-      // passthrough — multiplier stays 1×
-      continue;
-    }
-
-    if (ws === WinningSide.PUSH) {
-      // passthrough — multiplier stays 1×
+    if (ws === "VOID" || ws === "PUSH") {
       continue;
     }
 
     allPush = false;
 
-    const hitSide = ws === WinningSide.A ? SelectionSide.A : SelectionSide.B;
-    if (sel.side !== hitSide) {
+    if (sel.side !== ws) {
       anyLoss = true;
       break;
     }

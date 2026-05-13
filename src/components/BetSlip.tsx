@@ -6,7 +6,6 @@ import LegRow from "@/components/LegRow";
 import type { LegPoolsMap } from "@/lib/odds";
 import { multiplierForSide } from "@/lib/odds";
 import { placeBet } from "@/lib/bets";
-import { SelectionSide } from "@/generated/prisma/client";
 
 type Selection = { legId: string; side: "A" | "B" };
 
@@ -52,7 +51,7 @@ export default function BetSlip({
     for (const sel of selArr) {
       const legPools = pools.get(sel.legId);
       if (!legPools) return null;
-      const mult = multiplierForSide(legPools, sel.side === "A" ? SelectionSide.A : SelectionSide.B);
+      const mult = multiplierForSide(legPools, sel.side);
       if (mult === null) return null;
       m *= mult;
     }
@@ -113,7 +112,7 @@ export default function BetSlip({
                 const label = sel.side === "A" ? leg.sideALabel : leg.sideBLabel;
                 const legPools = pools.get(sel.legId);
                 const m = legPools
-                  ? multiplierForSide(legPools, sel.side === "A" ? SelectionSide.A : SelectionSide.B)
+                  ? multiplierForSide(legPools, sel.side)
                   : null;
                 return (
                   <li key={sel.legId} className="flex justify-between">
