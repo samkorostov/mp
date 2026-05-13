@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+    <div className="fixed inset-0 bg-gray-950 flex items-center justify-center px-4">
       <div className="text-center w-full max-w-sm">
         <h1 className="text-2xl font-bold text-white mb-2">Meeting Parlay</h1>
         <p className="text-gray-400 text-sm mb-8">Sign in to place bets and track your points</p>
