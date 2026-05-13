@@ -23,7 +23,7 @@ export default async function Home() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">Meeting Parlay</h1>
-          <p className="text-gray-400 mt-1">Bet on TA meeting outcomes with fake points</p>
+          <p className="text-gray-400 mt-1">Just blow my shit smooth off.</p>
         </div>
         {!session && (
           <Link
