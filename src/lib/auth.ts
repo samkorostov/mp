@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import { authConfig } from "@/lib/auth.config";
 
 const adminEmails = new Set(
   (process.env.ADMIN_EMAILS ?? "")
@@ -11,15 +11,10 @@ const adminEmails = new Set(
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  providers: [Google],
   callbacks: {
-    authorized({ auth, request }) {
-      const isSignedIn = !!auth?.user;
-      const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
-      if (isAuthPage) return true;
-      return isSignedIn;
-    },
+    ...authConfig.callbacks,
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
@@ -28,9 +23,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-  },
-  pages: {
-    signIn: "/auth/signin",
   },
 });
 
