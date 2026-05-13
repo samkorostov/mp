@@ -14,6 +14,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [Google],
   callbacks: {
+    authorized({ auth, request }) {
+      const isSignedIn = !!auth?.user;
+      const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
+      if (isAuthPage) return true;
+      return isSignedIn;
+    },
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
