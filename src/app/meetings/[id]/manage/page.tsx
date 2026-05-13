@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { lockMeeting, createLeg, resolveLeg, resolveMeeting, approveProposal } from "@/lib/bets";
+import { lockMeeting, createLeg, resolveLeg, resolveMeeting, approveProposal, deleteLeg } from "@/lib/bets";
 
 type Leg = {
   id: string;
@@ -228,6 +228,18 @@ function LegResolveRow({
   const [actualValue, setActualValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  function handleDelete() {
+    if (!confirm(`Delete "${leg.prompt}"? This cannot be undone.`)) return;
+    startTransition(async () => {
+      try {
+        await deleteLeg(leg.id);
+        onRefresh();
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Failed to delete");
+      }
+    });
+  }
+
   function resolve(side: "A" | "B" | "PUSH" | "VOID") {
     startTransition(async () => {
       try {
@@ -252,11 +264,22 @@ function LegResolveRow({
           <span className="text-xs text-gray-500 uppercase">{leg.kind === "OVER_UNDER" ? `O/U ${leg.line}` : "Moneyline"}</span>
           <p className="text-sm text-white font-medium mt-0.5">{leg.prompt}</p>
         </div>
-        {resolved && (
-          <span className="text-xs text-green-400 bg-green-900/40 border border-green-800 px-2 py-0.5 rounded-full">
-            {leg.winningSide}{leg.actualValue !== null ? ` (${leg.actualValue})` : ""}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {resolved && (
+            <span className="text-xs text-green-400 bg-green-900/40 border border-green-800 px-2 py-0.5 rounded-full">
+              {leg.winningSide}{leg.actualValue !== null ? ` (${leg.actualValue})` : ""}
+            </span>
+          )}
+          {!disabled && (
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="text-xs text-red-500 hover:text-red-400 transition"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {!resolved && !disabled && (

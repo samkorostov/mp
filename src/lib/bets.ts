@@ -216,6 +216,13 @@ export async function createLeg(data: {
   return leg;
 }
 
+export async function deleteLeg(legId: string) {
+  await requireAdmin();
+  const leg = await prisma.leg.findUniqueOrThrow({ where: { id: legId } });
+  await prisma.leg.delete({ where: { id: legId } });
+  revalidatePath(`/meetings/${leg.meetingId}/manage`);
+}
+
 export async function proposeLeg(data: {
   meetingId: string;
   kind: "MONEYLINE" | "OVER_UNDER";
