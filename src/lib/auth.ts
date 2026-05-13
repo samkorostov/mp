@@ -15,11 +15,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   callbacks: {
     ...authConfig.callbacks,
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.points = (user as unknown as { points: number }).points ?? 1000;
+      } else if (token.id) {
+        // Refresh points from DB on each token refresh
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { points: true },
+        });
+        if (dbUser) token.points = dbUser.points;
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token.id as string;
         session.user.role = adminEmails.has(session.user.email ?? "") ? "ADMIN" : "USER";
-        session.user.points = (user as unknown as { points: number }).points;
+        session.user.points = token.points as number;
       }
       return session;
     },
